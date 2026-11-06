@@ -1,7 +1,11 @@
+
 #include <stdio.h>
+
 // Function prototypes
 float loadBalance(void);
 int saveBalance(float balance);
+int appendTransaction(const char *type, float amount);
+
 void checkBalance(float balance);
 void deposit(float *balance);
 void withdraw(float *balance);
@@ -14,7 +18,7 @@ int main(void)
 
     balance = loadBalance();
 
-    do
+    while (1)
     {
         printf("\n========== MINI BANKING SYSTEM ==========\n");
         printf("1. Check Balance\n");
@@ -55,15 +59,12 @@ int main(void)
 
             case 5:
                 printf("\nThank you for using our banking system!\n");
-                break;
+                return 0;
 
             default:
                 printf("\nInvalid choice! Try again.\n");
         }
-
-    } while (choice != 5);
-
-    return 0;
+    }
 }
 
 // Load balance from file
@@ -95,7 +96,7 @@ float loadBalance(void)
     return balance;
 }
 
-// Save updated balance
+// Save balance to file
 int saveBalance(float balance)
 {
     FILE *fp;
@@ -117,7 +118,31 @@ int saveBalance(float balance)
     return 1;
 }
 
-// Display balance
+// Append transaction to history file
+int appendTransaction(const char *type, float amount)
+{
+    FILE *fp;
+    int writeStatus;
+    int closeStatus;
+
+    fp = fopen("transactions.txt", "a");
+
+    if (fp == NULL)
+        return 0;
+
+    writeStatus = (fprintf(fp, "%s: Rs. %.2f\n",
+                           type, amount) >= 0);
+
+    // Always close the file, even if fprintf fails
+    closeStatus = (fclose(fp) == 0);
+
+    if (writeStatus == 0 || closeStatus == 0)
+        return 0;
+
+    return 1;
+}
+
+// Display current balance
 void checkBalance(float balance)
 {
     printf("\nCurrent Balance: Rs. %.2f\n", balance);
@@ -127,7 +152,6 @@ void checkBalance(float balance)
 void deposit(float *balance)
 {
     float amount;
-    FILE *fp;
 
     printf("\nEnter amount to deposit: ");
 
@@ -141,7 +165,7 @@ void deposit(float *balance)
         return;
     }
 
-    if (amount <= 0)
+    if (!(amount > 0))
     {
         printf("Please enter a valid amount!\n");
         return;
@@ -156,21 +180,12 @@ void deposit(float *balance)
         return;
     }
 
-    fp = fopen("transactions.txt", "a");
-
-    if (fp == NULL)
+    if (appendTransaction("Deposit", amount) == 0)
     {
         *balance -= amount;
         saveBalance(*balance);
 
         printf("Deposit failed! Could not save transaction history.\n");
-        return;
-    }
-
-    if (fprintf(fp, "Deposit: Rs. %.2f\n", amount) < 0 ||
-        fclose(fp) != 0)
-    {
-        printf("Warning: Transaction history could not be saved completely.\n");
         return;
     }
 
@@ -182,7 +197,6 @@ void deposit(float *balance)
 void withdraw(float *balance)
 {
     float amount;
-    FILE *fp;
 
     printf("\nEnter amount to withdraw: ");
 
@@ -196,7 +210,7 @@ void withdraw(float *balance)
         return;
     }
 
-    if (amount <= 0)
+    if (!(amount > 0))
     {
         printf("Please enter a valid amount!\n");
         return;
@@ -217,9 +231,7 @@ void withdraw(float *balance)
         return;
     }
 
-    fp = fopen("transactions.txt", "a");
-
-    if (fp == NULL)
+    if (appendTransaction("Withdrawal", amount) == 0)
     {
         *balance += amount;
         saveBalance(*balance);
@@ -228,18 +240,11 @@ void withdraw(float *balance)
         return;
     }
 
-    if (fprintf(fp, "Withdrawal: Rs. %.2f\n", amount) < 0 ||
-        fclose(fp) != 0)
-    {
-        printf("Warning: Transaction history could not be saved completely.\n");
-        return;
-    }
-
     printf("\nWithdrawal successful!\n");
     printf("Updated Balance: Rs. %.2f\n", *balance);
 }
 
-// Display permanent transaction history
+// Display transaction history
 void transactionHistory(void)
 {
     char line[100];
