@@ -1,0 +1,4 @@
+*.exe
+*.o
+balance.txt
+transactions.txt
